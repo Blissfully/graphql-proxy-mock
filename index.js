@@ -48,25 +48,42 @@ async function main () {
 
   app.use(function(req,res,next){
 
-    if(!req.body || !req.body.query) {
-      console.log("Not GQL query")
-      next()
+    if(!req.body) {
+      console.log("No body")
+      return next()
     }
 
-    req.queryHash = req.body.query.hashCode()
-    console.log("hashes as ", req.queryHash)
+    if(req.method != "GET") {
+      console.log("Not a GET")
+      return next()
+    }
 
-    if(objReplaceByHash[req.queryHash]) {
-      const hashValue = objReplaceByHash[req.queryHash]
-      console.log("Returning from hash cache")
-      res.setHeader('Content-Type', 'application/json')
-      res.end(hashValue)
+    if(req.body.query) {
+      req.queryHash = req.body.query.hashCode()
     }
-    else {
-      next()
+    else if(req.query.query) {
+      req.queryHash = req.query.query.hashCode()
     }
+
+    if(req.queryHash) {
+      console.log("hashes as ", req.queryHash)
+
+      if(objReplaceByHash[req.queryHash]) {
+        const hashValue = objReplaceByHash[req.queryHash]
+        console.log("Returning from hash cache")
+        console.log(hashValue)
+        res.setHeader('Content-Type', 'application/json; charset=utf-8')
+        res.setHeader('Access-Control-Allow-Origin', '*')
+        return res.status(200).send(hashValue).send
+      }
+    }
+  
+    //default 
+    return next()
   })
   
+  app.set('etag', false);
+
   // Add the interceptor middleware
   app.use(interceptor(function(req, res){
     return {
