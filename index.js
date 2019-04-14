@@ -4,6 +4,7 @@ const hash = require("object-hash");
 const { setContext } = require("apollo-link-context");
 const interceptor = require("express-interceptor");
 const { ApolloServer, gql } = require("apollo-server-express");
+const fs = require('fs-extra')
 
 String.prototype.hashCode = function() {
   var hash = 0,
@@ -123,8 +124,26 @@ async function main() {
         },
         // Appends a paragraph at the end of the response body
         intercept: function(body, send) {
-          console.log("Intercepting repsonse & caching");
-          objReplaceByHash[req.queryHash] = body;
+          console.log("Intercepting response & caching");
+          console.log({body})
+
+          const queryFolder = `cache/${req.queryHash}`
+          const responseFilename = `${queryFolder}/responses/default.json`
+          const requestFilename = `${queryFolder}/request.json`
+          fs.outputFile(responseFilename, body, (err) => {
+            if(err) {
+              console.log({err})
+            }
+            console.log(`Wrote: ${responseFilename}`)
+          })
+          fs.outputJson(requestFilename, {query:req.query, body:req.body}, (err) => {
+            if(err) {
+              console.log({err})
+            }
+            console.log(`Wrote: ${requestFilename}`)
+          })
+
+          // objReplaceByHash[req.queryHash] = body;
           send(body);
         }
       };

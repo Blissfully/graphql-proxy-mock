@@ -13,6 +13,7 @@
     "body-parser": "1.18.3",
     "express": "4.16.4",
     "express-interceptor": "1.2.0",
+    "fs-extra": "7.0.1",
     "graphql": "14.2.1",
     "graphql-tools": "4.0.4",
     "node-fetch": "2.3.0",
