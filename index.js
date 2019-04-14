@@ -132,13 +132,13 @@ async function main() {
           const queryFolder = `cache/${req.queryHash}`
           const responseFilename = `${queryFolder}/responses/default.json`
           const requestFilename = `${queryFolder}/request.json`
-          fs.outputFile(responseFilename, body, (err) => {
+          fs.outputJson(responseFilename, JSON.parse(body), {spaces:2}, (err) => {
             if(err) {
               console.log({err})
             }
             console.log(`Wrote: ${responseFilename}`)
           })
-          fs.outputJson(requestFilename, {query:req.query, body:req.body}, (err) => {
+          fs.outputJson(requestFilename, {query:req.query, body:req.body}, {spaces:2}, (err) => {
             if(err) {
               console.log({err})
             }
