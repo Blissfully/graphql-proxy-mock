@@ -6,6 +6,7 @@
   "license": "MIT",
   "private": true,
   "dependencies": {
+    "apollo-link-context": "1.0.17",
     "apollo-link-http": "1.5.14",
     "apollo-server": "2.4.8",
     "apollo-server-express": "2.4.8",
