@@ -6,6 +6,15 @@ const interceptor = require("express-interceptor");
 const { ApolloServer, gql } = require("apollo-server-express");
 const fs = require('fs-extra')
 
+const {
+  makeRemoteExecutableSchema,
+  introspectSchema,
+  mergeSchemas
+} = require("graphql-tools");
+
+const { HttpLink } = require("apollo-link-http");
+const fetch = require("node-fetch");
+
 String.prototype.hashCode = function() {
   var hash = 0,
     i,
@@ -19,15 +28,6 @@ String.prototype.hashCode = function() {
   return hash;
 };
 
-const {
-  makeRemoteExecutableSchema,
-  introspectSchema,
-  mergeSchemas
-} = require("graphql-tools");
-
-const { HttpLink } = require("apollo-link-http");
-const fetch = require("node-fetch");
-
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 const graphQLSchemaUrl =
@@ -39,13 +39,6 @@ async function main() {
   const http = new HttpLink({ uri: graphQLSchemaUrl, fetch });
 
   const link = setContext((request, previousContext) => {
-    console.log("REQU")
-    console.log({previousContext, request})
-    if(request.headers ) {
-      console.log("YOOOOO", headers)
-
-    }
-
     if(!previousContext.graphqlContext || !previousContext.graphqlContext.headers) {
       return {}
     }
@@ -58,9 +51,19 @@ async function main() {
   }).concat(http);
 
   const remoteSchema = await introspectSchema(link);
-  const schema = await makeRemoteExecutableSchema({
+
+  
+
+  const executableRemoteSchema = await makeRemoteExecutableSchema({
     schema: remoteSchema,
     link: link
+  });
+
+  // possible workaround for typename issues
+  const schema = mergeSchemas({
+    schemas: [
+      executableRemoteSchema,
+    ],
   });
 
   // In the most basic sense, the ApolloServer can be started
@@ -83,8 +86,8 @@ async function main() {
       return next();
     }
 
-    if (req.method != "GET") {
-      console.log("Not a GET");
+    // Don't do special work for options
+    if (req.method == "OPTIONS") {
       return next();
     }
 
@@ -101,8 +104,7 @@ async function main() {
       if (fs.existsSync(requestFolder)) {
         const responseFile = `${requestFolder}/responses/default.json`
         const cacheValue = fs.readFileSync(responseFile, 'utf8')
-        console.log("Returning from hash cache");
-        console.log(cacheValue);
+        console.log(`Returning from hash cache: ${req.queryHash}`);
         res.setHeader("Content-Type", "application/json; charset=utf-8");
         res.setHeader("Access-Control-Allow-Origin", "*");
         return res.status(200).send(cacheValue).send;
@@ -121,13 +123,11 @@ async function main() {
       return {
         // Only HTML responses will be intercepted
         isInterceptable: function() {
-          console.log(res.get("Content-Type"));
-          return /application\/json/.test(res.get("Content-Type"));
+          return /application\/json/.test(res.get("Content-Type")) && req.queryHash;
         },
         // Appends a paragraph at the end of the response body
         intercept: function(body, send) {
           console.log("Intercepting response & caching");
-          console.log({body})
 
           const queryFolder = `cache/${req.queryHash}`
           const responseFilename = `${queryFolder}/responses/default.json`
