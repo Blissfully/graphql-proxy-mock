@@ -97,13 +97,15 @@ async function main() {
     if (req.queryHash) {
       console.log("hashes as ", req.queryHash);
 
-      if (objReplaceByHash[req.queryHash]) {
-        const hashValue = objReplaceByHash[req.queryHash];
+      const requestFolder = `cache/${req.queryHash}`
+      if (fs.existsSync(requestFolder)) {
+        const responseFile = `${requestFolder}/responses/default.json`
+        const cacheValue = fs.readFileSync(responseFile, 'utf8')
         console.log("Returning from hash cache");
-        console.log(hashValue);
+        console.log(cacheValue);
         res.setHeader("Content-Type", "application/json; charset=utf-8");
         res.setHeader("Access-Control-Allow-Origin", "*");
-        return res.status(200).send(hashValue).send;
+        return res.status(200).send(cacheValue).send;
       }
     }
 
