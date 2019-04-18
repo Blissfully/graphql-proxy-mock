@@ -1,6 +1,6 @@
 {
   "name": "gql-proxy-mock",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "main": "index.js",
   "author": "Aaron White",
   "license": "MIT",
@@ -11,6 +11,7 @@
     "apollo-server": "2.4.8",
     "apollo-server-express": "2.4.8",
     "body-parser": "1.18.3",
+    "commander": "2.20.0",
     "express": "4.16.4",
     "express-interceptor": "1.2.0",
     "fs-extra": "7.0.1",

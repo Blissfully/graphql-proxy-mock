@@ -7,6 +7,7 @@ const { setContext } = require("apollo-link-context");
 const interceptor = require("express-interceptor");
 const { ApolloServer, gql } = require("apollo-server-express");
 const fs = require('fs-extra')
+const program = require('commander');
 
 const {
   makeRemoteExecutableSchema,
@@ -32,10 +33,21 @@ String.prototype.hashCode = function() {
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
-const graphQLSchemaUrl =
-  process.argv[2] || "https://api.blissfully.com/prod/graphql";
+var graphQLSchemaUrl = "https://api.blissfully.com/prod/graphql";
+
+program
+  .version('0.1.0')
+  .arguments('<target-gql>')
+  .action((schemaUrl) => { graphQLSchemaUrl = schemaUrl } )
+  .option('-d, --dir <dir>', 'The directory to store and read from. Defaults to `cache`', 'cache')
+  .option('-e, --env <env>', 'Save and read responses under an environment tag.  Defaults to `default`', 'default')
+  .parse(process.argv);
+
 
 console.log(`Proxying: ${graphQLSchemaUrl}`);
+console.log(`    Saving cache to ./${program.dir}`)
+console.log(`    under the tag '${program.env}'`)
+
 
 async function main() {
   const http = new HttpLink({ uri: graphQLSchemaUrl, fetch });
@@ -102,9 +114,9 @@ async function main() {
     if (req.queryHash) {
       console.log("hashes as ", req.queryHash);
 
-      const requestFolder = `cache/${req.queryHash}`
+      const requestFolder = `${program.dir}/${req.queryHash}`
       if (fs.existsSync(requestFolder)) {
-        const responseFile = `${requestFolder}/responses/default.json`
+        const responseFile = `${requestFolder}/responses/${program.env}.json`
         const cacheValue = fs.readFileSync(responseFile, 'utf8')
         console.log(`Returning from hash cache: ${req.queryHash}`);
         res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -131,8 +143,8 @@ async function main() {
         intercept: function(body, send) {
           console.log("Intercepting response & caching");
 
-          const queryFolder = `cache/${req.queryHash}`
-          const responseFilename = `${queryFolder}/responses/default.json`
+          const queryFolder = `${program.dir}/${req.queryHash}`
+          const responseFilename = `${queryFolder}/responses/${program.env}.json`
           const requestFilename = `${queryFolder}/request.json`
           fs.outputJson(responseFilename, JSON.parse(body), {spaces:2}, (err) => {
             if(err) {
